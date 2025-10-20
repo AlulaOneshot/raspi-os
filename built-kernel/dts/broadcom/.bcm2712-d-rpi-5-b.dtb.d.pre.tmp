@@ -1,0 +1,15 @@
+bcm2712-d-rpi-5-b.o: arch/arm64/boot/dts/broadcom/bcm2712-d-rpi-5-b.dts \
+ arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts \
+ scripts/dtc/include-prefixes/dt-bindings/gpio/gpio.h \
+ scripts/dtc/include-prefixes/dt-bindings/clock/rp1.h \
+ scripts/dtc/include-prefixes/dt-bindings/interrupt-controller/irq.h \
+ scripts/dtc/include-prefixes/dt-bindings/mfd/rp1.h \
+ scripts/dtc/include-prefixes/dt-bindings/pwm/pwm.h \
+ scripts/dtc/include-prefixes/dt-bindings/reset/raspberrypi,firmware-reset.h \
+ arch/arm64/boot/dts/broadcom/bcm2712-ds.dtsi \
+ scripts/dtc/include-prefixes/dt-bindings/soc/bcm2835-pm.h \
+ arch/arm64/boot/dts/broadcom/bcm2712.dtsi \
+ scripts/dtc/include-prefixes/dt-bindings/interrupt-controller/arm-gic.h \
+ arch/arm64/boot/dts/broadcom/rp1.dtsi \
+ arch/arm64/boot/dts/broadcom/bcm2712-rpi.dtsi \
+ scripts/dtc/include-prefixes/dt-bindings/power/raspberrypi-power.h
