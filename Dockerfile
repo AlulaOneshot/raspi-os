@@ -6,4 +6,4 @@ WORKDIR /
 RUN git clone --depth 1 https://github.com/AlulaOneshot/raspi-os.git
 WORKDIR /raspi-os
 
-CMD ["bash", "/raspi-os/setup.sh"]
+CMD ["/bin/bash"]
