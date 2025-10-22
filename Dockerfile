@@ -5,3 +5,5 @@ RUN apt-get install bc bison flex libssl-dev make build-essential libc6-dev libn
 WORKDIR /
 RUN git clone --depth 1 https://github.com/AlulaOneshot/raspi-os.git
 WORKDIR /raspi-os
+
+CMD ["bash", "/raspi-os/setup.sh"]
