@@ -1,0 +1,10 @@
+[package]
+name = "shgl"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+drm ="0.14.1"
+gbm = {version = "0.18.0", default-features = false, features = ["drm-support", "import-egl"]}
+gl = "0.14.0"
+nix = "0.30.1"

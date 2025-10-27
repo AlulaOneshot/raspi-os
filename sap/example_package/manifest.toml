@@ -1,0 +1,19 @@
+# NOTES:
+# Splash GIF Resides at /splash/display.gif
+# Splash Audio Resides at /splash/audio.wav
+# Executable Resides at /payload/boot.elf
+
+[manifest]
+package_id = "dev.shiota.example_package" # [com, net, org, dev, sys].[publisher].[title]
+[manifest.name]
+en = "Shiota Example Package"
+version = "0.1.0" # Semantic Version
+type = "application" # [theme, application, game, dlc, mod, demo, tool]
+category = "test" # [tool, media, social, web, education, system, test]
+[manifest.author]
+en = "Shiota"
+[manifest.publisher]
+en = "Shiota"
+minimum_system_version = "0.0.0" # Semantic version
+genres = [] # Games/DLCs/Demos/Mods Only
+languages = [] # Supported Languages (ISO 639 Codes). Empty array for all

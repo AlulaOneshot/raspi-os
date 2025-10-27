@@ -1,0 +1,12 @@
+[package]
+name = "sap"
+description = "Library for manipulating Shiota Application Packages."
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+isolang = "2.4.0"
+tempfile = "3.23.0"
+xz2 = "0.1.7"
+tar = "0.4.44"
+toml = "0.9.8"
