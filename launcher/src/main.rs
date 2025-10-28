@@ -1,5 +1,5 @@
 fn main() {
-    let mut context = shgl::ShiotaGLContext::new();
+    let mut context = shgl::ShGLContext::new();
     match context.init() {
         Ok(_) => {
             loop {
