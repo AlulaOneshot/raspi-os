@@ -1,6 +1,7 @@
-use std::{fs::File, os::fd::AsFd};
+use std::os::fd::AsFd;
 
-use drm::{control::{connector, Device}};
+use drm::Device as DrmDevice;
+use gbm::Device as GbmDevice;
 
 struct ShiotaCardWrapper(std::fs::File);
 
@@ -24,27 +25,24 @@ impl drm::Device for ShiotaCardWrapper {}
 impl drm::control::Device for ShiotaCardWrapper {}
 
 pub struct ShiotaGLContext {
-    drm_device: Option<ShiotaCardWrapper>,
+    gpu: Option<ShiotaCardWrapper>,
 }
 
 impl ShiotaGLContext {
     pub fn new() -> Self {
         Self {
-            drm_device: None,
+            gpu: None,
         }
     }
 
     pub fn init(&mut self) -> Result<(), String> {
-        let device = ShiotaCardWrapper::open("/dev/dri/card0").map_err(|e| e.to_string())?;
-        let res_handles = device.resource_handles().unwrap();
-        println!("Connectors: {:?}", res_handles.connectors());
+        let gpu = ShiotaCardWrapper::open("/dev/dri/card0").map_err(|e| e.to_string())?;
+        
+        let gbm = GbmDevice::new(gpu);
 
-        for conn in res_handles.connectors() {
-            let info = device.get_connector(*conn, false).unwrap();
-            if let connector::State::Connected = info.state() {
+        
 
-            }
-        }
+        self.gpu = Some(gpu);
 
         Ok(())
     }
