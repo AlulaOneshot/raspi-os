@@ -1,6 +1,8 @@
 use glm::Vec3;
 use sdl2::render::Canvas;
 
+pub mod shapes;
+
 #[derive(Copy, Clone)]
 pub struct Color {
     pub r: f32,
@@ -16,10 +18,66 @@ pub struct Camera {
     up: Vec3,
 }
 
-#[derive(Copy, Clone)]
-pub struct Sampler2D(u32);
-
 pub struct ShaderProgram(u32);
+
+impl ShaderProgram {
+    pub fn bind(&self) {
+        unsafe {
+            gl::UseProgram(self.0);
+        }
+    }
+
+    pub fn unbind(&self) {
+        unsafe {
+            gl::UseProgram(0);
+        }
+    }
+}
+
+pub struct Vao(u32, u32); // (vao_id, attribute_count)
+
+impl Vao {
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindVertexArray(self.0);
+        }
+    }
+
+    pub fn unbind(&self) {
+        unsafe {
+            gl::BindVertexArray(0);
+        }
+    }
+}
+
+pub struct Vbo(u32);
+
+impl Vbo {
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.0);
+        }
+    }
+
+    pub fn unbind(&self) {
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        }
+    }
+
+    pub fn set_data(&self, data: &[f32]) {
+        self.bind();
+        unsafe {
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (data.len() * std::mem::size_of::<f32>()) as isize,
+                data.as_ptr() as *const std::ffi::c_void,
+                gl::STATIC_DRAW,
+            );
+        }
+        self.unbind();
+    }
+}
 
 pub struct ShGLDisplay {
     width: u32, // Should always be 800, but we keep track in case we make future models with different resolutions
@@ -28,11 +86,18 @@ pub struct ShGLDisplay {
     canvas: Canvas<sdl2::video::Window>,
 }
 
+pub enum CurrentDisplay {
+    Upper,
+    Lower,
+    None,
+}
+
 pub struct ShGLContext {
     sdl2_context: Option<sdl2::Sdl>,
     video_subsystem: Option<sdl2::VideoSubsystem>,
     upper_display: Option<ShGLDisplay>,
     lower_display: Option<ShGLDisplay>,
+    current_display: CurrentDisplay,
     event_pump: Option<sdl2::EventPump>,
     should_close: bool,
     current_camera: Option<Camera>,
@@ -48,6 +113,7 @@ impl ShGLContext {
             event_pump: None,
             should_close: false,
             current_camera: None,
+            current_display: CurrentDisplay::None,
         }
     }
 
@@ -72,9 +138,8 @@ impl ShGLContext {
         let upper_display_bounds = video_subsystem.display_bounds(0)?;
 
         let upper_window = video_subsystem
-            .window("Upper Display", upper_display_bounds.width(), upper_display_bounds.height())
+            .window("Upper Display", 800, 480)
             .position(upper_display_bounds.x(), upper_display_bounds.y())
-            .fullscreen_desktop()
             .opengl()
             .build()
             .map_err(|e| e.to_string())?;
@@ -93,9 +158,8 @@ impl ShGLContext {
         let lower_display_bounds = video_subsystem.display_bounds(1)?;
 
         let lower_window = video_subsystem
-            .window("Lower Display", lower_display_bounds.width(), lower_display_bounds.height())
+            .window("Lower Display", 800, 480)
             .position(lower_display_bounds.x(), lower_display_bounds.y())
-            .fullscreen_desktop()
             .opengl()
             .build()
             .map_err(|e| e.to_string())?;
@@ -185,6 +249,7 @@ impl ShGLContext {
     pub fn begin_drawing_upper(&mut self) {
         if let Some(upper_display) = &self.upper_display {
             upper_display.canvas.window().gl_make_current(&upper_display.gl_context).unwrap();
+            self.current_display = CurrentDisplay::Upper;
         }
     }
 
@@ -200,6 +265,7 @@ impl ShGLContext {
     pub fn begin_drawing_lower(&mut self) {
         if let Some(lower_display) = &self.lower_display {
             lower_display.canvas.window().gl_make_current(&lower_display.gl_context).unwrap();
+            self.current_display = CurrentDisplay::Lower;
         }
     }
 
@@ -230,7 +296,7 @@ impl ShGLContext {
                 gl::GetShaderiv(vertex_shader, gl::INFO_LOG_LENGTH, &mut len);
                 let mut buffer: Vec<u8> = Vec::with_capacity(len as usize + 1);
                 buffer.extend([b' '].iter().cycle().take(len as usize));
-                let error = std::ffi::CString::from_vec_unchecked(buffer);;
+                let error = std::ffi::CString::from_vec_unchecked(buffer);
                 gl::GetShaderInfoLog(vertex_shader, len, std::ptr::null_mut(), error.as_ptr() as *mut gl::types::GLchar);
                 return Err(format!("Vertex shader compilation failed: {}", error.to_string_lossy()));
             }
@@ -423,5 +489,21 @@ impl ShGLContext {
             let location = gl::GetUniformLocation(shader.0, c_name.as_ptr());
             gl::UniformMatrix4fv(location, 1, gl::FALSE, value.as_array().as_ptr() as *const f32);
         }
+    }
+
+    pub fn create_vbo(&mut self) -> Vbo {
+        let mut vbo_id = 0;
+        unsafe {
+            gl::GenBuffers(1, &mut vbo_id);
+        }
+        Vbo(vbo_id)
+    }
+
+    pub fn create_vao(&mut self, attribute_count: u32) -> Vao {
+        let mut vao_id = 0;
+        unsafe {
+            gl::GenVertexArrays(1, &mut vao_id);
+        }
+        Vao(vao_id, attribute_count)
     }
 }
