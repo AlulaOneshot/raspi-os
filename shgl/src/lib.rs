@@ -148,6 +148,8 @@ impl ShGLContext {
             .gl_create_context()
             .map_err(|e| e.to_string())?;
 
+        upper_window.gl_make_current(&upper_gl_context);
+
         let upper_canvas = upper_window
             .into_canvas()
             .build()

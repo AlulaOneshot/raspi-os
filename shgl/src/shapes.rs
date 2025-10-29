@@ -1,3 +1,5 @@
+use glm::Vector4;
+
 use crate::{Color, CurrentDisplay, ShGLContext};
 
 impl ShGLContext {
@@ -43,14 +45,17 @@ impl ShGLContext {
 
         let fragment_src = r#"#version 300 es
         precision mediump float;
+        uniform vec4 pixel_color;
         out vec4 FragColor;
         void main() {
-            FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Set pixel color to red
+            FragColor = pixel_color;
         }
         "#;
 
         let shader_program = self.create_shader(vertex_src, fragment_src).unwrap();
         shader_program.bind();
+
+        self.set_shader_uniform_vec4(&shader_program, "pixel_color", Vector4::new(color.r, color.g, color.b, color.a));
 
         unsafe {
             gl::EnableVertexAttribArray(0);

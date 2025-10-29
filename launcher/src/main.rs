@@ -4,7 +4,7 @@ fn main() {
     let mut context = shgl::ShGLContext::new();
     match context.init() {
         Ok(_) => {
-            loop {
+            while !context.should_close() {
                 context.begin_drawing();
                 context.begin_drawing_upper();
                 context.clear_screen(Color {r: 0.0, g: 0.0, b: 0.0, a: 1.0});
