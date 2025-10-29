@@ -9,4 +9,4 @@ glm = "0.3.0"
 
 [dependencies.sdl2]
 version = "0.38.0"
-features = ["gfx", "image", "mixer", "ttf"]
+features = []
