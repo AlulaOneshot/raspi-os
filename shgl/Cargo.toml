@@ -6,7 +6,5 @@ edition = "2024"
 [dependencies]
 gl = "0.14.0"
 glm = "0.3.0"
-
-[dependencies.sdl2]
-version = "0.38.0"
-features = ["gfx", "image", "mixer", "ttf"]
+glfw = "0.60.0"
+gl_loader = "0.1.2"

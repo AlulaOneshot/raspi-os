@@ -70,7 +70,7 @@ impl PackageManifest {
                 }
             }
 
-            return Ok();
+            return Ok(PackageManifest { package_id: "".into(), name: HashMap::new(), version: (0, 0, 0), r#type: PackageType::Application, category: PackageCategory::Tool, author: HashMap::new(), publisher: HashMap::new(), minimum_system_version: (0, 0, 0), genres: Vec::new(), languages: Vec::new() });
         }
         else {
             Err(format!("File {} does not exist", path.to_string_lossy()))
