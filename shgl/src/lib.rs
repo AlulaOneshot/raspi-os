@@ -20,11 +20,12 @@ impl ShGLContext {
         }
     }
 
-    pub fn init(&mut self) {
+    pub fn init(&mut self) -> Result<(), String> {
         let mut glfw = glfw::init(fail_on_errors!()).unwrap();
 
-        glfw.window_hint(WindowHint::ClientApi(ClientApiHint::OpenGlEs));
-        glfw.window_hint(WindowHint::ContextVersion(3, 0));
+        // glfw.window_hint(WindowHint::ClientApi(ClientApiHint::OpenGlEs));
+        // glfw.window_hint(WindowHint::ContextVersion(3, 0));
+        glfw.window_hint(WindowHint::ContextVersion(3, 3));
         glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
         glfw.window_hint(WindowHint::Resizable(false));
         
@@ -35,40 +36,65 @@ impl ShGLContext {
         let mut lower_display = None;
         let mut lower_display_events = None;
 
-        glfw.with_connected_monitors(|s, m| {
-            if m.len() < 2 {
-                panic!("At least two monitors are required for ShGL");
-            }
+        // glfw.with_connected_monitors(|s, m| {
+        //     if m.len() < 2 {
+        //         panic!("At least two monitors are required for ShGL");
+        //     }
 
-            let mut tmp = s.create_window(800, 480, "Upper Display", glfw::WindowMode::FullScreen(m[0])).unwrap();
+        //     let mut tmp = s.create_window(800, 480, "Upper Display", glfw::WindowMode::FullScreen(m[0])).unwrap();
 
-            tmp.0.make_current();
-            tmp.0.set_key_polling(true);
-            let mut size = tmp.0.get_framebuffer_size();
+        //     tmp.0.make_current();
+        //     tmp.0.set_key_polling(true);
+        //     let mut size = tmp.0.get_framebuffer_size();
 
-            unsafe {
-                gl::load_with(|s| tmp.0.get_proc_address(s).unwrap() as *const _);
-                gl::Viewport(0, 0, size.0, size.1);
-            }
+        //     unsafe {
+        //         gl::load_with(|s| tmp.0.get_proc_address(s).unwrap() as *const _);
+        //         gl::Viewport(0, 0, size.0, size.1);
+        //     }
 
-            upper_display = Some(tmp.0);
-            upper_display_events = Some(tmp.1);
+        //     upper_display = Some(tmp.0);
+        //     upper_display_events = Some(tmp.1);
 
-            tmp = upper_display.as_ref().unwrap().create_shared(800, 480, "Lower Display", glfw::WindowMode::FullScreen(m[1])).unwrap();
+        //     tmp = upper_display.as_ref().unwrap().create_shared(800, 480, "Lower Display", glfw::WindowMode::FullScreen(m[1])).unwrap();
             
-            tmp.0.make_current();
-            tmp.0.set_key_polling(true);
-            size = tmp.0.get_framebuffer_size();
+        //     tmp.0.make_current();
+        //     tmp.0.set_key_polling(true);
+        //     size = tmp.0.get_framebuffer_size();
 
-            unsafe {
-                gl::Viewport(0, 0, size.0, size.1);
-            }
+        //     unsafe {
+        //         gl::Viewport(0, 0, size.0, size.1);
+        //     }
 
-            s.make_context_current(None);
+        //     s.make_context_current(None);
 
-            lower_display = Some(tmp.0);
-            lower_display_events = Some(tmp.1);
-        });
+        //     lower_display = Some(tmp.0);
+        //     lower_display_events = Some(tmp.1);
+        // });
+        // For now we're just going to create two windows on the primary monitor.
+        
+        let mut tmp = glfw.create_window(800, 480, "Upper Display", glfw::WindowMode::Windowed).unwrap();
+        tmp.0.make_current();
+        tmp.0.set_key_polling(true);
+        let size = tmp.0.get_framebuffer_size();
+
+        unsafe {
+            gl::load_with(|s| gl_loader::get_proc_address(s) as *const _);
+            gl::Viewport(0, 0, size.0, size.1);
+        }
+
+        upper_display = Some(tmp.0);
+        upper_display_events = Some(tmp.1);
+
+        let (mut lower_win, lower_events) = upper_display.as_ref().unwrap().create_shared(800, 480, "Lower Display", glfw::WindowMode::Windowed).unwrap();
+        lower_win.make_current();
+        lower_win.set_key_polling(true);
+        let size = lower_win.get_framebuffer_size();
+
+        unsafe {
+            gl::Viewport(0, 0, size.0, size.1);
+        }
+
+        glfw.make_context_current(None);
 
         self.glfw_ctx = Some(glfw);
         self.upper_window = Some(ShGLWindow {
@@ -80,6 +106,6 @@ impl ShGLContext {
             events: lower_display_events.unwrap(),
         });
 
-        
+        return Ok(());
     }
 }
