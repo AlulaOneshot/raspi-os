@@ -20,10 +20,11 @@ impl Color {
     }
 
     pub const fn from_hex(hex: u32) -> Self {
-        let r = ((hex >> 16) & 0xFF) as u8;
-        let g = ((hex >> 8) & 0xFF) as u8;
-        let b = (hex & 0xFF) as u8;
-        Color::from_rgb(r, g, b)
+        let r = ((hex >> 24) & 0xFF) as u8;
+        let g = ((hex >> 16) & 0xFF) as u8;
+        let b = ((hex >> 8) & 0xFF) as u8;
+        let a = (hex & 0xFF) as u8;
+        Color::from_rgba(r, g, b, a)
     }
 }
 
