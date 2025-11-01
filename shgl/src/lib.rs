@@ -119,17 +119,9 @@ impl ShGLContext {
 
 
         glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
-        if cfg!(target_os = "linux") {
-            glfw.window_hint(WindowHint::ContextVersion(3, 0));  
-            glfw.window_hint(WindowHint::ClientApi(ClientApiHint::OpenGlEs));
-            glfw.window_hint(WindowHint::Resizable(false));
-        }
-        else if cfg!(target_os = "macos") {
-            glfw.window_hint(WindowHint::ContextVersion(3, 3));  
-            glfw.window_hint(WindowHint::ClientApi(ClientApiHint::OpenGl));
-            glfw.window_hint(WindowHint::OpenGlForwardCompat(true));
-            glfw.window_hint(WindowHint::Resizable(false));
-        }
+        glfw.window_hint(WindowHint::ContextVersion(3, 0));  
+        glfw.window_hint(WindowHint::ClientApi(ClientApiHint::OpenGlEs));
+        glfw.window_hint(WindowHint::Resizable(false));
 
         let (mut upper_window, upper_events) = glfw
             .create_window(800, 480, "Upper Window", glfw::WindowMode::Windowed)
@@ -238,6 +230,4 @@ impl ShGLContext {
     pub fn apply_camera(&mut self, camera: Camera) {
         self.current_camera = Some(camera);
     }
-
-
 }
