@@ -1,5 +1,7 @@
 use glfw::{ClientApiHint, Context, Glfw, Monitor, OpenGlProfileHint, WindowHint, fail_on_errors};
 
+pub mod shapes;
+
 #[derive(Clone, Copy)]
 pub struct Color {
     pub r: f32,
@@ -102,6 +104,7 @@ pub struct ShGLContext {
     lower_window: Option<ShGLWindow>,
     should_close: bool,
     current_camera: Option<Camera>,
+    current_shader: Option<Shader>
 }
 
 impl ShGLContext {
@@ -111,7 +114,8 @@ impl ShGLContext {
             upper_window: None,
             lower_window: None,
             should_close: false,
-            current_camera: None
+            current_camera: None,
+            current_shader: None
         }
     }
 
@@ -145,10 +149,16 @@ impl ShGLContext {
             gl::Viewport(0, 0, 800, 480);
         }
 
+        self.glfw_ctx = Some(glfw);
+
         self.upper_window = Some(ShGLWindow { window: upper_window, events: upper_events });
         self.lower_window = Some(ShGLWindow { window: lower_window, events: lower_events });
 
-        Ok(())
+        self.init_defaults()
+    }
+
+    fn init_defaults(&mut self) -> Result<(), String> {
+
     }
 
     pub fn deinit(&mut self) {
@@ -230,5 +240,9 @@ impl ShGLContext {
 
     pub fn apply_camera(&mut self, camera: Camera) {
         self.current_camera = Some(camera);
+    }
+
+    pub fn apply_shader(&mut self, shader: Shader) {
+        self.current_shader = Some(shader);
     }
 }
