@@ -139,7 +139,7 @@ impl Shader {
                 gl::GetShaderiv(vertex_shader, gl::INFO_LOG_LENGTH, &mut len);
                 let mut buffer: Vec<u8> = Vec::with_capacity(len as usize + 1);
                 buffer.set_len((len as usize) + 1);
-                gl::GetShaderInfoLog(vertex_shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                gl::GetShaderInfoLog(vertex_shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut u8);
                 return Err(String::from_utf8_lossy(&buffer).to_string());
             }
 
@@ -155,7 +155,7 @@ impl Shader {
                 gl::GetShaderiv(fragment_shader, gl::INFO_LOG_LENGTH, &mut len);
                 let mut buffer: Vec<u8> = Vec::with_capacity(len as usize + 1);
                 buffer.set_len((len as usize) + 1);
-                gl::GetShaderInfoLog(fragment_shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                gl::GetShaderInfoLog(fragment_shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut u8);
                 return Err(String::from_utf8_lossy(&buffer).to_string());
             }
 
@@ -171,7 +171,7 @@ impl Shader {
                 gl::GetProgramiv(program_id, gl::INFO_LOG_LENGTH, &mut len);
                 let mut buffer: Vec<u8> = Vec::with_capacity(len as usize + 1);
                 buffer.set_len((len as usize) + 1);
-                gl::GetProgramInfoLog(program_id, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                gl::GetProgramInfoLog(program_id, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut u8);
                 return Err(String::from_utf8_lossy(&buffer).to_string());
             }
 
