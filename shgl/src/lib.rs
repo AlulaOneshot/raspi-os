@@ -2,7 +2,7 @@ use std::{default, path::Path};
 
 use glfw::{ClientApiHint, Context, Glfw, Monitor, OpenGlProfileHint, WindowHint, fail_on_errors};
 
-pub use glm::Vec3;
+pub use glm::{Vec3, Vec2};
 
 pub mod shapes;
 

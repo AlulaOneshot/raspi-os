@@ -51,7 +51,7 @@ impl<'a> ShGLContext<'a> {
         }
     }
     
-    pub fn draw_triangle_textured(&mut self, verticies: [Vec3; 3], texture_coordinates: [Vec2; 3], texture: Texture) {
+    pub fn draw_triangle_textured(&mut self, verticies: [Vec3; 3], texture_coordinates: [Vec2; 3], texture: &Texture) {
         let modified_verticies: [f32; 15] = [
             verticies[0].x, verticies[0].y, verticies[0].z, texture_coordinates[0].x, texture_coordinates[0].y,
             verticies[1].x, verticies[1].y, verticies[1].z, texture_coordinates[1].x, texture_coordinates[1].y,
