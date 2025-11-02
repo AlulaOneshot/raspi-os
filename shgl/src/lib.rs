@@ -1,10 +1,46 @@
-use std::default;
+use std::{default, path::Path};
 
 use glfw::{ClientApiHint, Context, Glfw, Monitor, OpenGlProfileHint, WindowHint, fail_on_errors};
 
 pub use glm::Vec3;
 
 pub mod shapes;
+
+pub struct Texture {
+    id: u32,
+}
+
+impl Texture {
+    pub fn load_from_file(path: &Path) -> Result<Self, String> {
+        let image_reader = image::open(path).map_err(|e| e.to_string())?;
+        let image = image_reader.flipv().into_rgb8();
+        let (width, height) = image.dimensions();
+        let data = image.into_raw();
+        let mut texture_id: u32 = 0;
+
+        unsafe {
+            gl::GenTextures(1, &mut texture_id);
+            gl::BindTexture(gl::TEXTURE_2D, texture_id);
+            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, width as i32, height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, data.as_ptr() as *const std::ffi::c_void);
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+
+        Ok(Texture { id: texture_id })
+    }
+
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.id);
+        }
+    }
+
+    pub fn unbind(&self) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct Vbo {
@@ -233,6 +269,9 @@ pub struct ShGLContext<'a> {
     default_shader: Option<Shader>,
     triangle_vbo: Option<Vbo>,
     triangle_vao: Option<Vao>,
+    triangle_textured_vbo: Option<Vbo>,
+    triangle_textured_vao: Option<Vao>,
+    default_textured_shader: Option<Shader>,
 }
 
 impl<'a> ShGLContext<'a> {
@@ -247,6 +286,9 @@ impl<'a> ShGLContext<'a> {
             default_shader: None,
             triangle_vbo: None,
             triangle_vao: None,
+            triangle_textured_vbo: None,
+            triangle_textured_vao: None,
+            default_textured_shader: None,
         }
     }
 
@@ -309,6 +351,31 @@ impl<'a> ShGLContext<'a> {
         
         self.triangle_vbo = Some(Vbo::new());
         self.triangle_vao = Some(Vao::new());
+
+        self.triangle_textured_vbo = Some(Vbo::new());
+        self.triangle_textured_vao = Some(Vao::new());
+
+        let default_textured_vertex_shader_source = r#"#version 300 es
+            layout(location = 0) in vec3 position;
+            layout(location = 1) in vec2 texCoord;
+            out vec2 vTexCoord;
+            void main() {
+                gl_Position = vec4(position, 1.0);
+                vTexCoord = texCoord;
+            }
+            "#;
+
+        let default_textured_fragment_shader_source = r#"#version 300 es
+            precision mediump float;
+            in vec2 vTexCoord;
+            out vec4 fragColor;
+            uniform sampler2D textureSampler;
+            void main() {
+                fragColor = texture(textureSampler, vTexCoord);
+            }
+            "#;
+
+        self.default_textured_shader = Some(Shader::new(default_textured_vertex_shader_source, default_textured_fragment_shader_source)?);
         
         return Ok(());
     }

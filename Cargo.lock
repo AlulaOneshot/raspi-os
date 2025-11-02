@@ -1073,6 +1073,7 @@ dependencies = [
  "gl_loader",
  "glfw",
  "glm",
+ "image",
 ]
 
 [[package]]
