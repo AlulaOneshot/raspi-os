@@ -1,6 +1,63 @@
+use std::default;
+
 use glfw::{ClientApiHint, Context, Glfw, Monitor, OpenGlProfileHint, WindowHint, fail_on_errors};
 
+pub use glm::Vec3;
+
 pub mod shapes;
+
+#[derive(Clone, Copy)]
+pub struct Vbo {
+    id: u32,
+}
+
+impl Vbo {
+    pub fn new() -> Self {
+        let mut vbo_id: u32 = 0;
+        unsafe {
+            gl::GenBuffers(1, &mut vbo_id);
+        }
+        Vbo { id: vbo_id }
+    }
+
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.id);
+        }
+    }
+
+    pub fn unbind(&self) {
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        }
+    }
+}
+
+pub struct Vao {
+    id: u32,
+}
+
+impl Vao {
+    pub fn new() -> Self {
+        let mut vao_id: u32 = 0;
+        unsafe {
+            gl::GenVertexArrays(1, &mut vao_id);
+        }
+        Vao { id: vao_id }
+    }
+
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindVertexArray(self.id);
+        }
+    }
+
+    pub fn unbind(&self) {
+        unsafe {
+            gl::BindVertexArray(0);
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct Color {
@@ -65,6 +122,66 @@ pub struct Shader {
 }
 
 impl Shader {
+    pub fn new(vertex_source: &str, fragment_source: &str) -> Result<Self, String> {
+        let vertex_shader;
+        let fragment_shader;
+
+        unsafe {
+            vertex_shader = gl::CreateShader(gl::VERTEX_SHADER);
+            let c_vertex_source = std::ffi::CString::new(vertex_source).unwrap();
+            gl::ShaderSource(vertex_shader, 1, &c_vertex_source.as_ptr(), std::ptr::null());
+            gl::CompileShader(vertex_shader);
+
+            let mut success: i32 = 1;
+            gl::GetShaderiv(vertex_shader, gl::COMPILE_STATUS, &mut success);
+            if success == 0 {
+                let mut len: i32 = 0;
+                gl::GetShaderiv(vertex_shader, gl::INFO_LOG_LENGTH, &mut len);
+                let mut buffer: Vec<u8> = Vec::with_capacity(len as usize + 1);
+                buffer.set_len((len as usize) + 1);
+                gl::GetShaderInfoLog(vertex_shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                return Err(String::from_utf8_lossy(&buffer).to_string());
+            }
+
+            fragment_shader = gl::CreateShader(gl::FRAGMENT_SHADER);
+            let c_fragment_source = std::ffi::CString::new(fragment_source).unwrap();
+            gl::ShaderSource(fragment_shader, 1, &c_fragment_source.as_ptr(), std::ptr::null());
+            gl::CompileShader(fragment_shader);
+
+            success = 1;
+            gl::GetShaderiv(fragment_shader, gl::COMPILE_STATUS, &mut success);
+            if success == 0 {
+                let mut len: i32 = 0;
+                gl::GetShaderiv(fragment_shader, gl::INFO_LOG_LENGTH, &mut len);
+                let mut buffer: Vec<u8> = Vec::with_capacity(len as usize + 1);
+                buffer.set_len((len as usize) + 1);
+                gl::GetShaderInfoLog(fragment_shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                return Err(String::from_utf8_lossy(&buffer).to_string());
+            }
+
+            let program_id = gl::CreateProgram();
+            gl::AttachShader(program_id, vertex_shader);
+            gl::AttachShader(program_id, fragment_shader);
+            gl::LinkProgram(program_id);
+
+            success = 1;
+            gl::GetProgramiv(program_id, gl::LINK_STATUS, &mut success);
+            if success == 0 {
+                let mut len: i32 = 0;
+                gl::GetProgramiv(program_id, gl::INFO_LOG_LENGTH, &mut len);
+                let mut buffer: Vec<u8> = Vec::with_capacity(len as usize + 1);
+                buffer.set_len((len as usize) + 1);
+                gl::GetProgramInfoLog(program_id, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                return Err(String::from_utf8_lossy(&buffer).to_string());
+            }
+
+            gl::DeleteShader(vertex_shader);
+            gl::DeleteShader(fragment_shader);
+
+            Ok(Shader { program_id })
+        }
+    }
+
     pub fn bind(&self) {
         unsafe {
             gl::UseProgram(self.program_id);
@@ -93,21 +210,32 @@ impl Shader {
     }
 }
 
+impl Drop for Shader {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteProgram(self.program_id);
+        }
+    }
+}
+
 pub struct ShGLWindow {
     window: glfw::PWindow,
     events: glfw::GlfwReceiver<(f64, glfw::WindowEvent)>,
 }
 
-pub struct ShGLContext {
+pub struct ShGLContext<'a> {
     glfw_ctx: Option<Glfw>,
     upper_window: Option<ShGLWindow>,
     lower_window: Option<ShGLWindow>,
     should_close: bool,
     current_camera: Option<Camera>,
-    current_shader: Option<Shader>
+    current_shader: Option<&'a Shader>,
+    default_shader: Option<Shader>,
+    triangle_vbo: Option<Vbo>,
+    triangle_vao: Option<Vao>,
 }
 
-impl ShGLContext {
+impl<'a> ShGLContext<'a> {
     pub fn new() -> Self {
         ShGLContext {
             glfw_ctx: None,
@@ -115,7 +243,10 @@ impl ShGLContext {
             lower_window: None,
             should_close: false,
             current_camera: None,
-            current_shader: None
+            current_shader: None,
+            default_shader: None,
+            triangle_vbo: None,
+            triangle_vao: None,
         }
     }
 
@@ -158,7 +289,28 @@ impl ShGLContext {
     }
 
     fn init_defaults(&mut self) -> Result<(), String> {
+        let default_vertex_shader_source = r#"#version 300 es
+            layout(location = 0) in vec3 position;
+            void main() {
+                gl_Position = vec4(position, 1.0);
+            }
+            "#;
 
+        let default_fragment_shader_source = r#"#version 300 es
+            precision mediump float;
+            out vec4 fragColor;
+            uniform vec4 color;
+            void main() {
+                fragColor = color;
+            }
+            "#;
+
+        self.default_shader = Some(Shader::new(default_vertex_shader_source, default_fragment_shader_source)?);
+        
+        self.triangle_vbo = Some(Vbo::new());
+        self.triangle_vao = Some(Vao::new());
+        
+        return Ok(());
     }
 
     pub fn deinit(&mut self) {
@@ -242,7 +394,7 @@ impl ShGLContext {
         self.current_camera = Some(camera);
     }
 
-    pub fn apply_shader(&mut self, shader: Shader) {
+    pub fn apply_shader(&mut self, shader: &'a Shader) {
         self.current_shader = Some(shader);
     }
 }
