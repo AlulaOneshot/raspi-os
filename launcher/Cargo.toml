@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 prismatica = { path = "../prismatica" }
+glm = "0.3.0"

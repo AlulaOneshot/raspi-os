@@ -8,6 +8,7 @@ pub struct OpenGL2DWindow {
 }
 
 impl OpenGL2DWindow {
+    /// Create an OpenGL2DWindow from a GLFW context
     pub fn create(glfw: &mut glfw::Glfw, title: &str, width: u32, height: u32) -> Result<Self, String> {
         let window = match glfw.create_window(width, height, title, glfw::WindowMode::Windowed) {
             Some(win) => win,
@@ -19,6 +20,7 @@ impl OpenGL2DWindow {
         })
     }
 
+    /// Create a shared OpenGL2DWindow from an existing one
     pub fn create_shared(&mut self, title: &str, width: u32, height: u32) -> Result<OpenGL2DWindow, String> {
         let parent_window = match &self.window {
             Some(win) => win,
@@ -41,7 +43,8 @@ impl OpenGL2DWindow {
         })
     }
 
-    pub fn get_events(&mut self) -> Result<FlushedMessages<'_, (f64, WindowEvent)>, String> {
+    /// Get the events from the window
+    pub(crate) fn get_events(&mut self) -> Result<FlushedMessages<'_, (f64, WindowEvent)>, String> {
         let events = match &mut self.events {
             Some(ev) => ev,
             None => return Err("Failed to get events".to_string()),
@@ -50,6 +53,7 @@ impl OpenGL2DWindow {
         Ok(glfw::flush_messages(events))
     }
 
+    /// Check if the window should close
     pub fn should_close(&self) -> Result<bool, String> {
         let window = match &self.window {
             Some(win) => win,
