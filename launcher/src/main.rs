@@ -45,8 +45,8 @@ fn main() {
 
             let shader = OpenGL2DShader::from_source(vertex_shader_src, fragment_shader_src).unwrap();
 
-            let mut upper_transform = Matrix4::identity();
-            let mut lower_transform = Matrix4::identity();
+            let upper_transform = Matrix4::identity();
+            let lower_transform = Matrix4::identity();
 
             shader.bind();
 
