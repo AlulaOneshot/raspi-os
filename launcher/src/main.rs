@@ -1,7 +1,6 @@
 use std::path::Path;
 
-use glm::{Vector3, Vector4, ext};
-use prismatica::{Color, backends::opengl2d::{OpenGL2DRenderer, mesh::{Mesh, OpenGLVertex, Texture}, shader::OpenGL2DShader}, renderer::Renderer};
+use prismatica::{Color, backends::opengl2d::{OpenGL2DRenderer, mesh::{Mesh, OpenGLVertex, Texture}, shader::OpenGL2DShader}, math::Matrix4, renderer::Renderer};
 
 fn main() {
     let mut ctx = OpenGL2DRenderer::new();
@@ -46,12 +45,8 @@ fn main() {
 
             let shader = OpenGL2DShader::from_source(vertex_shader_src, fragment_shader_src).unwrap();
 
-            let mut upper_transform = glm::Mat4::new(Vector4::new(1.0, 0.0, 0.0, 0.0), Vector4::new(0.0, 1.0, 0.0, 0.0), Vector4::new(0.0, 0.0, 1.0, 0.0), Vector4::new(0.0, 0.0, 0.0, 1.0));
-            let mut lower_transform = glm::Mat4::new(Vector4::new(1.0, 0.0, 0.0, 0.0), Vector4::new(0.0, 1.0, 0.0, 0.0), Vector4::new(0.0, 0.0, 1.0, 0.0), Vector4::new(0.0, 0.0, 0.0, 1.0));
-
-            upper_transform = ext::rotate(&upper_transform, glm::radians(45.0), Vector3::new(1.0, 0.0, 0.0));
-
-            lower_transform = ext::scale(&lower_transform, Vector3::new(0.5, 0.5, 1.0));
+            let mut upper_transform = Matrix4::identity();
+            let mut lower_transform = Matrix4::identity();
 
             shader.bind();
 

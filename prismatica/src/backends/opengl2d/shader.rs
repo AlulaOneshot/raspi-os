@@ -1,4 +1,4 @@
-use crate::shader::Shader;
+use crate::{math::Matrix4, shader::Shader};
 
 pub struct OpenGL2DShader {
     id: u32,
@@ -136,7 +136,7 @@ impl OpenGL2DShader {
         self.unbind();
     }
     
-    pub fn set_uniform_mat4(&self, name: &str, mat: &glm::Mat4) {
+    pub fn set_uniform_mat4(&self, name: &str, mat: &Matrix4) {
         self.bind();
         let c_name = std::ffi::CString::new(name).unwrap();
         unsafe {
@@ -144,7 +144,7 @@ impl OpenGL2DShader {
                 gl::GetUniformLocation(self.id, c_name.as_ptr()),
                 1,
                 gl::FALSE,
-                mat.as_array().as_ptr() as *const f32,
+                mat.to_array().as_ptr() as *const f32,
             );
         }
         self.unbind();

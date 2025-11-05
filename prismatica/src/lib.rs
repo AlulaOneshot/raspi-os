@@ -4,6 +4,7 @@ pub mod renderer;
 pub mod backends;
 pub mod window;
 pub mod shader;
+pub mod math;
 
 pub struct Color {
     pub r: f32,
