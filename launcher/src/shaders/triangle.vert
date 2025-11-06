@@ -1,13 +1,15 @@
 #version 330 core
-layout(location = 0) in vec3 position;
+layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 normal;
-layout(location = 2) in vec2 tex_coords;
+layout(location = 2) in vec2 texCoords;
 
-out vec2 frag_tex_coords;
-out vec3 frag_normal;
+out vec2 fragTexCoords;
+out vec3 fragNormal;
+
+uniform mat4 transform;
 
 void main() {
-    gl_Position = vec4(position, 1.0);
-    frag_tex_coords = tex_coords;
-    frag_normal = normal;
+    gl_Position = transform * vec4(aPos, 1.0);
+    fragTexCoords = texCoords;
+    fragNormal = normal;
 }

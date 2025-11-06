@@ -1,6 +1,9 @@
+use std::{ffi::{CStr, CString}, str::FromStr};
+
+use glam::Mat4;
 use glfw::{Context, PWindow};
 
-pub mod math;
+pub use glam as glm;
 
 pub struct PrismWindow {
     window: Option<PWindow>,
@@ -264,7 +267,7 @@ impl PrismRenderer {
         }
     }
 
-    pub fn clear_screen(&mut self, color: math::Vector4) {
+    pub fn clear_screen(&mut self, color: glam::Vec4) {
         if !self.initialized {
             panic!("PrismRenderer must be initialized before clearing screen");
         }
@@ -469,13 +472,13 @@ impl Drop for PrismRenderer {
 }
 
 pub struct Vertex {
-    pub position: math::Vector3,
-    pub normal: math::Vector3,
-    pub tex_coords: math::Vector2,
+    pub position: glam::Vec3,
+    pub normal: glam::Vec3,
+    pub tex_coords: glam::Vec2,
 }
 
 impl Vertex {
-    pub fn new(position: math::Vector3, normal: math::Vector3, tex_coords: math::Vector2) -> Self {
+    pub fn new(position: glam::Vec3, normal: glam::Vec3, tex_coords: glam::Vec2) -> Self {
         Self {
             position,
             normal,
@@ -487,9 +490,9 @@ impl Vertex {
 impl From<[f32; 8]> for Vertex {
     fn from(arr: [f32; 8]) -> Self {
         Self {
-            position: math::Vector3::from([arr[0], arr[1], arr[2]]),
-            normal: math::Vector3::from([arr[3], arr[4], arr[5]]),
-            tex_coords: math::Vector2::from([arr[6], arr[7]]),
+            position: glam::Vec3::new(arr[0], arr[1], arr[2]),
+            normal: glam::Vec3::new(arr[3], arr[4], arr[5]),
+            tex_coords: glam::Vec2::new(arr[6], arr[7]),
         }
     }
 }
@@ -525,4 +528,15 @@ pub struct Mesh<'a> {
 
 pub struct Shader {
     pub id: u32,
+}
+
+impl Shader {
+    pub fn set_uniform_mat4(&mut self, name: &str, value: Mat4) {
+        unsafe {
+            gl::UseProgram(self.id);
+            let name_c_str = CString::from_str(name).unwrap();
+            let location = gl::GetUniformLocation(self.id, name_c_str.as_ptr());
+            gl::UniformMatrix4fv(location, 1, gl::FALSE, value.as_ref().as_ptr())
+        }
+    }
 }
