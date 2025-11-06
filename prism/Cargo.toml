@@ -1,0 +1,10 @@
+[package]
+name = "prism"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+image = "0.25.8"
+gl = "0.14.0"
+glfw = "0.60.0"
+gl_loader = "0.1.2"

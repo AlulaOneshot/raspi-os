@@ -535,7 +535,7 @@ checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
 name = "launcher"
 version = "0.1.0"
 dependencies = [
- "prismatica",
+ "prism",
 ]
 
 [[package]]
@@ -788,6 +788,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
 dependencies = [
  "zerocopy",
+]
+
+[[package]]
+name = "prism"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "gl_loader",
+ "glfw",
+ "image",
 ]
 
 [[package]]
