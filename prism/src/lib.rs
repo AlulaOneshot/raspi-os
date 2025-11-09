@@ -1,9 +1,13 @@
-use std::{ffi::{CStr, CString}, str::FromStr};
+use std::{ffi::{CStr, CString}, str::FromStr, time::Instant};
 
-use glam::Mat4;
+use glam::{Mat4, Vec3};
 use glfw::{Context, PWindow};
 
 pub use glam as glm;
+pub use glfw::Key;
+
+use crate::mesh::Mesh;
+pub mod mesh;
 
 pub struct PrismWindow {
     window: Option<PWindow>,
@@ -43,6 +47,8 @@ pub struct PrismRenderer {
     initialized: bool,
     upper_window: Option<PrismWindow>,
     lower_window: Option<PrismWindow>,
+    delta_time: f32,
+    delta_instant: Instant,
 }
 
 impl PrismRenderer {
@@ -53,6 +59,8 @@ impl PrismRenderer {
             initialized: false,
             upper_window: None,
             lower_window: None,
+            delta_time: 0.0,
+            delta_instant: Instant::now(),
         }
     }
 
@@ -78,6 +86,7 @@ impl PrismRenderer {
 
         unsafe {
             gl::Viewport(0, 0, 800, 480);
+            gl::Enable(gl::DEPTH_TEST);
         }
 
         let mut lower_window = upper_window.create_shared("Prism Lower Window", 800, 480)?;
@@ -86,6 +95,7 @@ impl PrismRenderer {
 
         unsafe {
             gl::Viewport(0, 0, 800, 480);
+            gl::Enable(gl::DEPTH_TEST);
         }
         
         glfw.make_context_current(None);
@@ -147,8 +157,8 @@ impl PrismRenderer {
             // Set texture parameters
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
 
             gl::GenerateMipmap(gl::TEXTURE_2D);
 
@@ -200,7 +210,7 @@ impl PrismRenderer {
                         match event {
                             glfw::WindowEvent::Close => {
                                 self.should_close = true;
-                            }
+                            },
                             _ => {}
                         }
                     }
@@ -220,6 +230,8 @@ impl PrismRenderer {
             panic!("PrismRenderer must be initialized before beginning upper screen");
         }
 
+        self.delta_instant = Instant::now();
+
         if let Some(upper_window) = &mut self.upper_window {
             upper_window.make_current();
         }
@@ -236,6 +248,8 @@ impl PrismRenderer {
             }
         }
 
+        self.delta_time = self.delta_instant.elapsed().as_secs_f32();
+
         if let Some(glfw) = &mut self.glfw {
             glfw.make_context_current(None);
         }
@@ -245,6 +259,8 @@ impl PrismRenderer {
         if !self.initialized {
             panic!("PrismRenderer must be initialized before beginning lower screen");
         }
+
+        self.delta_instant = Instant::now();
 
         if let Some(lower_window) = &mut self.lower_window {
             lower_window.make_current();
@@ -262,6 +278,8 @@ impl PrismRenderer {
             }
         }
 
+        self.delta_time = self.delta_instant.elapsed().as_secs_f32();
+
         if let Some(glfw) = &mut self.glfw {
             glfw.make_context_current(None);
         }
@@ -278,7 +296,7 @@ impl PrismRenderer {
         }
     }
 
-    pub fn create_mesh<'a>(&mut self, vertices: Vec<Vertex>, indices: Vec<u32>, textures: Vec<&'a Texture>) -> Mesh<'a> {
+    pub fn create_mesh(&mut self, vertices: Vec<Vertex>, indices: Vec<u32>, textures: Vec<Texture>) -> Mesh {
         if !self.initialized {
             panic!("PrismRenderer must be initialized before creating meshes");
         }
@@ -366,9 +384,13 @@ impl PrismRenderer {
             vertices,
             indices,
             textures,
+            model: Mat4::IDENTITY,
             vao,
             vbo,
             ebo,
+            position: glam::Vec3::ZERO,
+            rotation: glam::Vec3::ZERO,
+            scale: glam::Vec3::ONE,
         }
     }
 
@@ -438,7 +460,7 @@ impl PrismRenderer {
         Ok(Shader { id: shader })
     }
 
-    pub fn draw_mesh(&mut self, mesh: &Mesh, shader: &Shader) {
+    pub fn draw_mesh(&mut self, mesh: &Mesh, shader: &mut Shader) {
         if !self.initialized {
             panic!("PrismRenderer must be initialized before drawing meshes");
         }
@@ -452,6 +474,8 @@ impl PrismRenderer {
                 gl::BindTexture(gl::TEXTURE_2D, texture.id);
             }
 
+            shader.set_uniform_mat4("model", mesh.model);
+
             gl::BindVertexArray(mesh.vao);
             gl::DrawElements(
                 gl::TRIANGLES,
@@ -462,6 +486,57 @@ impl PrismRenderer {
             gl::BindVertexArray(0);
             gl::ActiveTexture(gl::TEXTURE0);
         }
+    }
+
+    pub fn get_time(&self) -> f64 {
+        if !self.initialized {
+            panic!("PrismRenderer must be initialized before getting time");
+        }
+
+        match self.glfw {
+            Some(ref glfw) => glfw.get_time(),
+            None => panic!("GLFW is not initialized"),
+        }
+    }
+
+    pub fn get_delta(&self) -> f32 {
+        if !self.initialized {
+            panic!("PrismRenderer must be initialized before getting delta time");
+        }
+
+        self.delta_time
+    }
+    
+    pub fn key_pressed(&self, key: glfw::Key) -> bool {
+        if !self.initialized {
+            panic!("PrismRenderer must be initialized before checking key states");
+        }
+
+        let mut res = glfw::Action::Release;
+
+        match self.upper_window {
+            Some(ref window) => {
+                if let Some(win) = &window.window {
+                    if win.get_key(key) == glfw::Action::Press {
+                        res = glfw::Action::Press;
+                    }
+                }
+            }
+            None => panic!("Upper window is not initialized"),
+        }
+
+        match self.lower_window {
+            Some(ref window) => {
+                if let Some(win) = &window.window {
+                    if win.get_key(key) == glfw::Action::Press {
+                        res = glfw::Action::Press;
+                    }
+                }
+            }
+            None => panic!("Lower window is not initialized"),
+        }
+
+        res == glfw::Action::Press
     }
 }
 
@@ -516,16 +591,6 @@ pub struct Texture {
     pub id: u32
 }
 
-pub struct Mesh<'a> {
-    pub vertices: Vec<Vertex>,
-    pub indices: Vec<u32>,
-    pub textures: Vec<&'a Texture>,
-
-    pub vao: u32,
-    pub vbo: u32,
-    pub ebo: u32,
-}
-
 pub struct Shader {
     pub id: u32,
 }
@@ -538,5 +603,83 @@ impl Shader {
             let location = gl::GetUniformLocation(self.id, name_c_str.as_ptr());
             gl::UniformMatrix4fv(location, 1, gl::FALSE, value.as_ref().as_ptr())
         }
+    }
+
+    pub fn set_uniform_vec3(&mut self, name: &str, value: Vec3) {
+        unsafe {
+            gl::UseProgram(self.id);
+            let name_c_str = CString::from_str(name).unwrap();
+            let location = gl::GetUniformLocation(self.id, name_c_str.as_ptr());
+            gl::Uniform3f(location, value.x, value.y, value.z);
+        }
+    }
+
+    pub fn set_uniform_float(&mut self, name: &str, value: f32) {
+        unsafe {
+            gl::UseProgram(self.id);
+            let name_c_str = CString::from_str(name).unwrap();
+            let location = gl::GetUniformLocation(self.id, name_c_str.as_ptr());
+            gl::Uniform1f(location, value);
+        }
+    }
+}
+
+pub struct Camera {
+    position: glam::Vec3,
+    front: glam::Vec3,
+    up: glam::Vec3,
+    right: glam::Vec3,
+    world_up: glam::Vec3,
+    /// in radians
+    yaw: f32,
+    /// in radians
+    pitch: f32,
+    zoom: f32,
+}
+
+impl Camera {
+    pub fn new(position: glam::Vec3, up: glam::Vec3, yaw_rad: f32, pitch_rad: f32) -> Self {        
+        let mut x = Self {
+            position,
+            world_up: up,
+            yaw: yaw_rad,
+            pitch: pitch_rad,
+            front: Vec3::ZERO,
+            right: Vec3::ZERO,
+            up: Vec3::ZERO,
+            zoom: 45.0,
+        };
+
+        x.update_camera_vectors();
+        x
+    }
+
+    fn update_camera_vectors(&mut self) {
+        let mut front = Vec3::ZERO;
+        front.x = self.yaw.cos() * self.pitch.cos();
+        front.y = self.pitch.sin();
+        front.z = self.yaw.sin() * self.pitch.cos();
+        front = front.normalize();
+        self.front = front;
+        self.right = front.cross(self.world_up).normalize();
+        self.up = self.right.cross(front).normalize();
+    }
+        
+    pub fn get_view_matrix(&self) -> Mat4 {
+        Mat4::look_at_rh(self.position, self.position + self.front, self.up)
+    }
+
+    pub fn get_position(&self) -> Vec3 {
+        self.position
+    }
+
+    pub fn adjust_x(&mut self, amount: f32) {
+        self.position.x += amount;
+        self.update_camera_vectors();
+    }
+
+    pub fn adjust_z(&mut self, amount: f32) {
+        self.position.z += amount;
+        self.update_camera_vectors();
     }
 }
