@@ -9,13 +9,13 @@ pub use glfw::Key;
 use crate::mesh::Mesh;
 pub mod mesh;
 
-pub struct PrismWindow {
+struct PrismWindow {
     window: Option<PWindow>,
     events: Option<glfw::GlfwReceiver<(f64, glfw::WindowEvent)>>,
 }
 
 impl PrismWindow {
-    pub fn create(glfw: &mut glfw::Glfw, title: &str, width: u32, height: u32) -> Result<Self, String> {
+    fn create(glfw: &mut glfw::Glfw, title: &str, width: u32, height: u32) -> Result<Self, String> {
         let (window, events) = glfw
             .create_window(width, height, title, glfw::WindowMode::Windowed)
             .ok_or_else(|| "Failed to create GLFW window".to_string())?;
@@ -26,7 +26,7 @@ impl PrismWindow {
         })
     }
 
-    pub fn create_shared(&mut self, title: &str, width: u32, height: u32) -> Result<Self, String> {
+    fn create_shared(&mut self, title: &str, width: u32, height: u32) -> Result<Self, String> {
         let (window, events) = self.window.as_mut().unwrap().create_shared(width, height, title, glfw::WindowMode::Windowed)
             .ok_or_else(|| "Failed to create shared GLFW window".to_string())?;
 
@@ -45,10 +45,13 @@ pub struct PrismRenderer {
     glfw: Option<glfw::Glfw>,
     should_close: bool,
     initialized: bool,
+    current_window: u32, // 0 for upper, 1 for lower
     upper_window: Option<PrismWindow>,
     lower_window: Option<PrismWindow>,
-    delta_time: f32,
-    delta_instant: Instant,
+    upper_delta_time: f32,
+    lower_delta_time: f32,
+    upper_delta_instant: Instant,
+    lower_delta_instant: Instant
 }
 
 impl PrismRenderer {
@@ -57,10 +60,13 @@ impl PrismRenderer {
             glfw: None,
             should_close: false,
             initialized: false,
+            current_window: 4294967295,
             upper_window: None,
             lower_window: None,
-            delta_time: 0.0,
-            delta_instant: Instant::now(),
+            upper_delta_time: 0.0,
+            lower_delta_time: 0.0,
+            upper_delta_instant: Instant::now(),
+            lower_delta_instant: Instant::now()
         }
     }
 
@@ -230,7 +236,7 @@ impl PrismRenderer {
             panic!("PrismRenderer must be initialized before beginning upper screen");
         }
 
-        self.delta_instant = Instant::now();
+        self.upper_delta_instant = Instant::now();
 
         if let Some(upper_window) = &mut self.upper_window {
             upper_window.make_current();
@@ -248,7 +254,7 @@ impl PrismRenderer {
             }
         }
 
-        self.delta_time = self.delta_instant.elapsed().as_secs_f32();
+        self.upper_delta_time = self.upper_delta_instant.elapsed().as_secs_f32();
 
         if let Some(glfw) = &mut self.glfw {
             glfw.make_context_current(None);
@@ -260,7 +266,7 @@ impl PrismRenderer {
             panic!("PrismRenderer must be initialized before beginning lower screen");
         }
 
-        self.delta_instant = Instant::now();
+        self.lower_delta_instant = Instant::now();
 
         if let Some(lower_window) = &mut self.lower_window {
             lower_window.make_current();
@@ -278,7 +284,7 @@ impl PrismRenderer {
             }
         }
 
-        self.delta_time = self.delta_instant.elapsed().as_secs_f32();
+        self.lower_delta_time = self.lower_delta_instant.elapsed().as_secs_f32();
 
         if let Some(glfw) = &mut self.glfw {
             glfw.make_context_current(None);
@@ -504,7 +510,12 @@ impl PrismRenderer {
             panic!("PrismRenderer must be initialized before getting delta time");
         }
 
-        self.delta_time
+        if self.current_window == 0 {
+            self.upper_delta_time
+        }
+        else {
+            self.lower_delta_time
+        }
     }
     
     pub fn key_pressed(&self, key: glfw::Key) -> bool {
@@ -624,6 +635,7 @@ impl Shader {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Camera {
     position: glam::Vec3,
     front: glam::Vec3,
@@ -680,6 +692,16 @@ impl Camera {
 
     pub fn adjust_z(&mut self, amount: f32) {
         self.position.z += amount;
+        self.update_camera_vectors();
+    }
+
+    pub fn adjust_y(&mut self, amount: f32) {
+        self.position.y += amount;
+        self.update_camera_vectors();
+    }
+
+    pub fn adjust_position(&mut self, vector: Vec3) {
+        self.position += vector;
         self.update_camera_vectors();
     }
 }

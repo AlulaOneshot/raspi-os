@@ -73,9 +73,8 @@ fn main() {
 
             let mut shader = ctx.create_shader_from_source(vertex_shader_src, fragment_shader_src).unwrap();
 
-            let view_transform = Mat4::IDENTITY * Mat4::from_translation(Vec3::new(0.0, 0.0, -3.0));
             let mut camera = Camera::new(
-                Vec3::new(0.0, 0.0, 3.0),
+                Vec3::new(0.0, 0.0, 8.0),
                 Vec3::new(0.0, 1.0, 0.0),
                 -90.0f32.to_radians(),
                 0.0f32.to_radians(),
@@ -86,37 +85,48 @@ fn main() {
             while !ctx.should_close() {
                 let color = Vec4::new(0.0, 0.0, 0.0, 1.0);
                 if ctx.key_pressed(Key::W) {
-                    camera.adjust_z(-5.0 * ctx.get_delta());
+                    camera.adjust_z(-10.0 * ctx.get_delta());
                 }
                 if ctx.key_pressed(Key::S) {
-                    camera.adjust_z(5.0 * ctx.get_delta());
+                    camera.adjust_z(10.0 * ctx.get_delta());
                 }
                 if ctx.key_pressed(Key::A) {
-                    camera.adjust_x(-5.0 * ctx.get_delta());
+                    camera.adjust_x(-10.0 * ctx.get_delta());
                 }
                 if ctx.key_pressed(Key::D) {
-                    camera.adjust_x(5.0 * ctx.get_delta());
+                    camera.adjust_x(10.0 * ctx.get_delta());
+                }
+                if ctx.key_pressed(Key::Q) {
+                    camera.adjust_y(10.0 * ctx.get_delta());
+                }
+                if ctx.key_pressed(Key::E) {
+                    camera.adjust_y(-10.0 * ctx.get_delta());
                 }
                 triangle_mesh.set_rotation_x(ctx.get_time() as f32 * 25.0f32.to_radians());
                 triangle_mesh.set_rotation_y(ctx.get_time() as f32 * 50.0f32.to_radians());
                 triangle_mesh.set_rotation_z(ctx.get_time() as f32 * 50.0f32.to_radians());
+                triangle_mesh.set_scale(Vec3::new(5.0, 5.0, 5.0));
                 ctx.handle_events();
                 ctx.begin_upper_screen();
                 ctx.clear_screen(color);
                 shader.set_uniform_mat4("view", camera.get_view_matrix());
                 shader.set_uniform_mat4("projection", projection_transform);
-                shader.set_uniform_vec3("lightPos", Vec3::new(1.2, 1.0, 2.0));
                 shader.set_uniform_vec3("viewPos", camera.get_position());
-                shader.set_uniform_vec3("lightColor", Vec3::new(1.0, 1.0, 1.0));
+                shader.set_uniform_vec3("material.ambient", Vec3::new(0.725, 0.949, 1.0));
+                shader.set_uniform_vec3("material.diffuse", Vec3::new(0.745, 0.949, 1.0));
+                shader.set_uniform_vec3("material.specular", Vec3::new(0.5, 0.5, 0.5));
+                shader.set_uniform_float("material.shininess", 32.0);
+                shader.set_uniform_vec3("light.position", Vec3::new(1.2, 1.0, 8.0));
+                shader.set_uniform_vec3("light.ambient", Vec3::new(0.2, 0.2, 0.2));
+                shader.set_uniform_vec3("light.diffuse", Vec3::new(0.5, 0.5, 0.5));
+                shader.set_uniform_vec3("light.specular", Vec3::new(1.0, 1.0, 1.0));
                 ctx.draw_mesh(&triangle_mesh, &mut shader);
                 ctx.end_upper_screen();
                 ctx.begin_lower_screen();
                 ctx.clear_screen(color);
                 shader.set_uniform_mat4("view", camera.get_view_matrix());
                 shader.set_uniform_mat4("projection", projection_transform);
-                shader.set_uniform_vec3("lightPos", Vec3::new(1.2, 1.0, 2.0));
                 shader.set_uniform_vec3("viewPos", camera.get_position());
-                shader.set_uniform_vec3("lightColor", Vec3::new(1.0, 1.0, 1.0));
                 ctx.draw_mesh(&triangle_mesh, &mut shader);
                 ctx.end_lower_screen();
             }

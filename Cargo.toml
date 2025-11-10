@@ -2,4 +2,4 @@
 resolver = "3"
 members = [
     "launcher"
-, "prism", "sap"]
+, "prism", "sap", "shiota_engine", "test_game"]
