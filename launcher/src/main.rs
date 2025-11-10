@@ -118,7 +118,7 @@ fn main() {
                 shader.set_uniform_float("material.shininess", 32.0);
                 shader.set_uniform_vec3("light.position", Vec3::new(1.2, 1.0, 8.0));
                 shader.set_uniform_vec3("light.ambient", Vec3::new(0.2, 0.2, 0.2));
-                shader.set_uniform_vec3("light.diffuse", Vec3::new(0.5, 0.5, 0.5));
+                shader.set_uniform_vec3("light.diffuse", Vec3::new(1.0, 1.0, 1.0));
                 shader.set_uniform_vec3("light.specular", Vec3::new(1.0, 1.0, 1.0));
                 ctx.draw_mesh(&triangle_mesh, &mut shader);
                 ctx.end_upper_screen();
